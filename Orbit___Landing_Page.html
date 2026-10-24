@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Orbit — Find Your Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0a0a14;
+    --bg-mid:#12101f;
+    --violet:#8b7cf6;
+    --violet-light:#b4a7fb;
+    --blue:#5aa8ff;
+    --teal:#2dd4bf;
+    --pink:#f472b6;
+    --text-hi:#f3f1fb;
+    --text-mid:#b9b4cf;
+    --text-low:#a5a0bd;           /* 7.8:1 on --bg-deep (was 4.6:1) */
+    --glass:rgba(255,255,255,0.06);
+    --glass-border:rgba(255,255,255,0.12);
+    --screen:#0d0b1a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;scroll-padding-top:84px;}
+  body{
+    font-family:'Outfit','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(ellipse at 20% 0%, #1a1530 0%, var(--bg-deep) 55%),
+               radial-gradient(ellipse at 90% 30%, #0f2436 0%, transparent 50%),
+               var(--bg-deep);
+    color:var(--text-hi);
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+  a{text-decoration:none;color:inherit;}
+  .ic{width:1em;height:1em;flex:none;display:block;}
+  .stars{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 90px 80px, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.5px 1.5px at 160px 120px, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 230px 40px, rgba(255,255,255,.3), transparent),
+      radial-gradient(1.5px 1.5px at 290px 160px, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 340px 70px, rgba(255,255,255,.3), transparent);
+    background-repeat:repeat;
+    background-size:360px 220px;
+    opacity:.35;                  /* quieter behind body text */
+  }
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* NAV */
+  nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(16px);
+    background:rgba(10,10,20,0.72);
+    border-bottom:1px solid var(--glass-border);
+  }
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:72px;gap:20px;}
+  .logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;letter-spacing:0.5px;}
+  .logo-mark{
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg, var(--violet), var(--blue));
+    box-shadow:0 0 18px rgba(139,124,246,0.6);
+    display:grid;place-items:center;
+  }
+  .logo-mark::after{content:"";width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.25);}
+  .nav-links{display:flex;gap:30px;font-size:15px;color:var(--text-mid);}
+  .nav-links a{padding:6px 0;border-bottom:2px solid transparent;transition:color .2s ease,border-color .2s ease;}
+  .nav-links a:hover{color:var(--text-hi);}
+  .nav-links a[aria-current="true"]{color:var(--text-hi);border-bottom-color:var(--violet);}
+  .nav-actions{display:flex;align-items:center;gap:18px;}
+  .nav-signin{font-size:14px;color:var(--text-mid);font-weight:500;}
+  .nav-signin:hover{color:var(--text-hi);}
+  .nav-cta{
+    padding:10px 22px;border-radius:999px;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    color:#0a0a14;font-weight:600;font-size:14px;
+    box-shadow:0 4px 20px rgba(139,124,246,0.35);
+    transition:transform .2s ease;
+  }
+  .nav-cta:hover{transform:translateY(-2px);}
+  .nav-toggle{display:none;}
+
+  /* HERO */
+  header.hero{padding:88px 0 80px;position:relative;overflow:hidden;}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:56px;align-items:center;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:13px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--violet-light);background:var(--glass);
+    border:1px solid var(--glass-border);padding:7px 16px;border-radius:999px;
+    margin-bottom:22px;
+  }
+  h1{
+    text-wrap:balance;
+    font-size:54px;line-height:1.08;font-weight:700;letter-spacing:-0.8px;
+    margin-bottom:22px;
+  }
+  h1 .grad{
+    background:linear-gradient(135deg,var(--violet-light),var(--blue));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    display:inline-block;padding-right:.08em;
+  }
+  .hero p.lead{font-size:18px;line-height:1.65;color:var(--text-mid);max-width:490px;margin-bottom:34px;}
+  .btn-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .btn-primary{
+    padding:15px 30px;border-radius:999px;font-weight:600;font-size:15px;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    color:#0a0a14;box-shadow:0 8px 30px rgba(139,124,246,0.4);
+    transition:transform .2s ease, box-shadow .2s ease;
+    display:inline-block;border:0;cursor:pointer;font-family:inherit;
+  }
+  .btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(139,124,246,0.55);}
+  .btn-secondary{
+    padding:15px 30px;border-radius:999px;font-weight:600;font-size:15px;
+    background:var(--glass);border:1px solid var(--glass-border);color:var(--text-hi);
+    transition:background .2s ease;display:inline-block;
+  }
+  .btn-secondary:hover{background:rgba(255,255,255,0.12);}
+  .hero-signin{font-size:14.5px;color:var(--text-mid);margin-bottom:22px;}
+  .hero-signin a{color:var(--violet-light);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+  .trust-row{color:var(--text-mid);font-size:13.5px;}
+
+  /* PHONES (shared) */
+  .phone-stage{position:relative;display:flex;justify-content:center;min-height:560px;align-items:center;}
+  .phone{
+    width:100%;border-radius:38px;
+    background:linear-gradient(160deg,#1c1830,#120f20);
+    border:1px solid var(--glass-border);
+    box-shadow:0 30px 80px rgba(0,0,0,0.55), 0 0 60px rgba(139,124,246,0.15);
+    padding:12px;position:relative;z-index:2;
+  }
+  .hero .phone{max-width:300px;}
+  .screen{
+    border-radius:28px;overflow:hidden;height:100%;position:relative;
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(139,124,246,0.24), transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(90,168,255,0.12), transparent 50%),
+      var(--screen);
+    padding:18px 15px 12px;display:flex;flex-direction:column;gap:10px;
+  }
+  .notch{width:72px;height:6px;border-radius:4px;background:#2a2640;margin:0 auto 6px;flex:none;}
+  .greeting{font-size:12.5px;color:var(--text-mid);}
+  .greeting-name{font-size:23px;font-weight:700;line-height:1.1;margin-top:-6px;}
+  .greeting-name em{font-style:normal;color:var(--violet-light);}
+  .tile-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .tile{
+    border:1px solid rgba(255,255,255,0.12);border-radius:15px;padding:11px;
+    font-size:11px;color:var(--text-mid);display:flex;flex-direction:column;gap:2px;
+  }
+  .tile .ic{font-size:17px;color:var(--text-hi);margin-bottom:6px;}
+  .tile b{font-size:13px;color:var(--text-hi);font-weight:600;}
+  .t1{background:linear-gradient(135deg,rgba(139,124,246,.32),rgba(90,168,255,.10));}
+  .t2{background:linear-gradient(135deg,rgba(45,212,191,.22),rgba(90,168,255,.10));}
+  .t3{background:linear-gradient(135deg,rgba(168,85,190,.28),rgba(244,114,182,.08));}
+  .t4{background:linear-gradient(135deg,rgba(45,212,191,.18),rgba(139,124,246,.16));}
+  .plan{
+    background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);
+    border-radius:15px;padding:12px;
+  }
+  .plan-head{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:8px;}
+  .plan-head b{font-weight:600;}
+  .plan-head span{color:var(--text-mid);font-size:11px;}
+  .bar{height:5px;border-radius:5px;background:rgba(255,255,255,0.1);overflow:hidden;margin-bottom:10px;}
+  .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--violet),var(--blue));}
+  .todo{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-hi);padding:3px 0;}
+  .todo .box{width:14px;height:14px;border-radius:50%;border:1.5px solid #6e6990;flex:none;display:grid;place-items:center;}
+  .todo.done{color:var(--text-low);text-decoration:line-through;}
+  .todo.done .box{background:var(--violet);border-color:var(--violet);color:#0a0a14;}
+  .todo .box .ic{font-size:9px;stroke-width:3;}
+  .ai-btn{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    font-size:12px;font-weight:600;padding:10px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(139,124,246,.28),rgba(90,168,255,.16));
+    border:1px solid rgba(139,124,246,.5);
+  }
+  .ai-btn .ic{font-size:13px;}
+  .tabbar{
+    margin-top:auto;display:flex;justify-content:space-between;
+    border-top:1px solid var(--glass-border);padding-top:9px;
+  }
+  .tabbar span{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--text-low);}
+  .tabbar .ic{font-size:16px;}
+  .tabbar span.active{color:var(--violet-light);}
+
+  /* moon (from the welcome screen) */
+  .moon{
+    position:absolute;z-index:1;width:150px;height:150px;border-radius:50%;
+    top:6px;right:-6px;
+    background:radial-gradient(circle at 35% 30%, #ffffff 0%, #d4d6ea 38%, #8f92ae 100%);
+    box-shadow:0 0 90px rgba(139,124,246,.55), 0 0 30px rgba(90,168,255,.25);
+  }
+  .moon::before,.moon::after,.moon i{content:"";position:absolute;border-radius:50%;background:rgba(95,98,130,.38);}
+  .moon::before{width:26px;height:26px;left:30px;top:34px;}
+  .moon::after{width:14px;height:14px;right:34px;top:62px;}
+  .moon i{width:20px;height:20px;left:44px;bottom:30px;}
+  .orb-glow{
+    position:absolute;width:440px;height:440px;border-radius:50%;
+    background:radial-gradient(circle,rgba(139,124,246,0.30),transparent 70%);
+    top:40px;left:50%;transform:translateX(-50%);z-index:0;filter:blur(10px);
+  }
+
+  section{padding:90px 0;position:relative;}
+  .section-head{text-align:center;max-width:640px;margin:0 auto 52px;}
+  .section-head .eyebrow{margin-bottom:16px;}
+  .section-head h2{text-wrap:balance;font-size:38px;font-weight:700;margin-bottom:16px;letter-spacing:-0.4px;line-height:1.15;}
+  .section-head p{color:var(--text-mid);font-size:16.5px;line-height:1.6;}
+
+  /* FEATURES */
+  .feature-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;}
+  .feature-card{
+    background:var(--glass);border:1px solid var(--glass-border);
+    border-radius:20px;padding:24px 18px;transition:border-color .25s ease;
+  }
+  .feature-card:hover{border-color:rgba(139,124,246,0.45);}
+  .feature-icon{
+    width:44px;height:44px;border-radius:14px;margin-bottom:18px;
+    display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--violet-light);
+    background:linear-gradient(135deg,rgba(139,124,246,0.25),rgba(90,168,255,0.18));
+  }
+  .feature-card h3{font-size:17px;margin-bottom:8px;}
+  .feature-card p{font-size:14px;color:var(--text-mid);line-height:1.55;}
+
+  /* GALLERY */
+  .gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;align-items:stretch;}
+  .shot{display:flex;flex-direction:column;gap:18px;}
+  .shot .phone{flex:1;}
+  .shot figcaption{min-height:112px;font-size:14px;line-height:1.55;color:var(--text-mid);padding:0 6px;}
+  .shot figcaption b{display:block;color:var(--text-hi);font-size:16px;margin-bottom:4px;font-weight:600;}
+  .gallery .screen{padding:18px 11px 12px;}
+  .screen h4{font-size:19px;font-weight:700;line-height:1.15;}
+  .screen .sub{font-size:11px;color:var(--text-mid);}
+
+  /* planner */
+  .planner{align-items:center;text-align:center;}
+  .planner .tabbar{align-self:stretch;}
+  .mic{
+    width:64px;height:64px;border-radius:50%;margin:10px 0 6px;display:grid;place-items:center;font-size:26px;color:#fff;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    box-shadow:0 0 0 10px rgba(139,124,246,.12),0 0 0 22px rgba(139,124,246,.06);
+  }
+  .typebox{
+    width:100%;display:flex;align-items:center;gap:8px;text-align:left;font-size:11.5px;color:var(--text-mid);
+    border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:13px;padding:10px 11px;margin-top:14px;
+  }
+  .typebox .ic{font-size:14px;}
+  .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:4px;}
+  .chip{
+    font-size:11px;color:var(--text-hi);padding:6px 10px;border-radius:999px;
+    border:1px solid var(--glass-border);background:rgba(255,255,255,.07);
+  }
+  .chip.on{background:linear-gradient(135deg,var(--violet),var(--blue));color:#0a0a14;border-color:transparent;font-weight:600;}
+  .label-sm{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-low);margin-top:10px;}
+
+  /* goals */
+  .seg{display:flex;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);border-radius:999px;padding:3px;font-size:11px;}
+  .seg span{flex:1;text-align:center;padding:6px 0;border-radius:999px;color:var(--text-mid);}
+  .seg .on{background:linear-gradient(135deg,var(--violet),var(--blue));color:#0a0a14;font-weight:600;}
+  .goal{display:flex;align-items:center;gap:11px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:15px;padding:10px 11px;}
+  .ring{
+    --p:50;--c:var(--violet);
+    width:44px;height:44px;border-radius:50%;flex:none;position:relative;display:grid;place-items:center;
+    background:conic-gradient(var(--c) calc(var(--p) * 1%), rgba(255,255,255,.12) 0);
+  }
+  .ring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:#14112a;}
+  .ring b{position:relative;font-size:11px;font-weight:700;}
+  .goal h5{font-size:13px;font-weight:600;}
+  .goal small{font-size:11px;color:var(--text-mid);}
+
+  /* meditate */
+  .screen-top{display:flex;justify-content:space-between;align-items:center;}
+  .screen-top .ic{font-size:18px;color:var(--text-mid);}
+  .feat{
+    border:1px solid rgba(139,124,246,.35);border-radius:16px;padding:13px;position:relative;
+    background:linear-gradient(135deg,rgba(139,124,246,.38),rgba(90,168,255,.12));
+  }
+  .feat small{font-size:10.5px;background:rgba(255,255,255,.14);padding:3px 9px;border-radius:999px;}
+  .feat b{display:block;font-size:16px;margin:8px 0 2px;font-weight:700;}
+  .feat span{display:block;font-size:11px;color:var(--text-mid);padding-right:42px;line-height:1.4;}
+  .play{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--violet),var(--blue));color:#0a0a14;position:absolute;right:12px;bottom:12px;font-size:11px;}
+  .fchips{display:flex;gap:6px;flex-wrap:wrap;}
+  .fchips .chip{padding:5px 10px;}
+  .sess{display:flex;align-items:center;gap:10px;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:14px;padding:9px;}
+  .thumb{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;color:#fff;font-size:12px;}
+  .g1{background:linear-gradient(135deg,#8b7cf6,#6a52d9);}
+  .g2{background:linear-gradient(135deg,#4a6fa5,#5aa8ff);}
+  .g3{background:linear-gradient(135deg,#a78bfa,#f472b6);}
+  .sess h5{font-size:13px;font-weight:600;}
+  .sess small{font-size:11px;color:var(--text-mid);}
+
+  /* profile */
+  .me{display:flex;align-items:center;gap:11px;}
+  .avatar-s{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--pink));display:grid;place-items:center;font-weight:700;color:#0a0a14;font-size:15px;}
+  .me h4{font-size:17px;}
+  .rings3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center;border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:15px;padding:10px 4px;}
+  .rings3 .ring{width:50px;height:50px;margin:0 auto 6px;}
+  .rings3 .ring b{font-size:12px;}
+  .rings3 small{display:block;font-size:10.5px;color:var(--text-mid);line-height:1.3;}
+  .week{border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:15px;padding:11px;}
+  .week-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;}
+  .week-head span{color:var(--text-mid);font-size:11px;}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:56px;}
+  .bars i{flex:1;border-radius:4px;background:rgba(255,255,255,.14);}
+  .bars i.today{background:linear-gradient(180deg,var(--violet),var(--blue));}
+  .bars i.future{background:transparent;border:1px dashed rgba(255,255,255,.2);height:6px!important;}
+  .days{display:flex;gap:6px;margin-top:5px;font-size:10px;color:var(--text-low);}
+  .days span{flex:1;text-align:center;}
+  .badges{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .badge{border:1px solid var(--glass-border);background:rgba(255,255,255,.05);border-radius:13px;padding:9px;font-size:11px;color:var(--text-mid);line-height:1.35;}
+  .badge b{display:block;font-size:12px;color:var(--text-hi);margin-bottom:2px;font-weight:600;}
+  .badge.locked{border-style:dashed;}
+  .badge.locked b{display:flex;align-items:center;gap:5px;}
+  .badge.locked .ic{font-size:11px;}
+
+  /* HOW IT WORKS */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
+  .step{position:relative;padding:32px 26px;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;}
+  .step-num{
+    width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,var(--violet),var(--blue));
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#0a0a14;
+    margin-bottom:18px;font-size:15px;
+  }
+  .step h3{font-size:18px;margin-bottom:10px;}
+  .step p{font-size:14.5px;color:var(--text-mid);line-height:1.6;}
+
+  /* STATS */
+  .stats-band{
+    padding:0;
+    background:linear-gradient(135deg,rgba(139,124,246,0.1),rgba(90,168,255,0.08));
+    border-top:1px solid var(--glass-border);border-bottom:1px solid var(--glass-border);
+  }
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center;padding:60px 0;}
+  .stat-num{font-size:38px;font-weight:700;background:linear-gradient(135deg,var(--violet-light),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px;}
+  .stat-label{font-size:14px;color:var(--text-mid);}
+
+  /* PERSONAS */
+  .persona-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .persona-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:24px;padding:30px;}
+  .persona-top{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+  .avatar{
+    width:58px;height:58px;border-radius:50%;
+    background:linear-gradient(135deg,var(--violet),var(--pink));
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#0a0a14;
+  }
+  .persona-top h3{font-size:19px;margin-bottom:3px;}
+  .persona-top span{font-size:13.5px;color:var(--text-low);}
+  .persona-card p.quote{
+    font-style:italic;color:var(--text-mid);font-size:15px;line-height:1.6;
+    border-left:2px solid var(--violet);padding-left:14px;margin-bottom:16px;
+  }
+  .persona-tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .persona-tags span{
+    font-size:12.5px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);
+    padding:5px 12px;border-radius:999px;color:var(--text-mid);
+  }
+
+  /* FAQ */
+  .faq-list{max-width:760px;margin:0 auto;display:grid;gap:12px;}
+  details{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:18px 22px;}
+  summary{cursor:pointer;font-weight:600;font-size:16.5px;}
+  details p{color:var(--text-mid);font-size:15px;line-height:1.6;margin-top:12px;}
+
+  /* CTA */
+  .cta-band{
+    background:linear-gradient(135deg,rgba(139,124,246,0.18),rgba(90,168,255,0.14));
+    border-radius:32px;padding:70px 50px;text-align:center;border:1px solid var(--glass-border);
+    margin:0 auto;position:relative;overflow:hidden;
+  }
+  .cta-band h2{font-size:34px;margin-bottom:16px;letter-spacing:-0.3px;}
+  .cta-band p.lead2{color:var(--text-mid);font-size:16.5px;margin:0 auto 28px;max-width:500px;line-height:1.6;}
+  .wait{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:520px;margin:0 auto;}
+  .wait label{position:absolute;left:-9999px;}
+  .wait input{
+    flex:1 1 260px;min-width:0;padding:15px 22px;border-radius:999px;font-size:15px;font-family:inherit;
+    background:rgba(10,10,20,.6);border:1px solid var(--glass-border);color:var(--text-hi);
+  }
+  .wait input::placeholder{color:var(--text-low);}
+  .wait input[aria-invalid="true"]{border-color:#ff8aa1;}
+  .form-msg{min-height:22px;margin-top:14px;font-size:14.5px;}
+  .form-msg.err{color:#ffb3c1;}
+  .form-msg.ok{color:#9ff0d6;}
+  .cta-note{margin-top:8px;font-size:13px;color:var(--text-low);}
+  .cta-signin{margin-top:22px;font-size:14.5px;color:var(--text-mid);}
+  .cta-signin a{color:var(--violet-light);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+
+  /* FOOTER */
+  footer{padding:60px 0 40px;border-top:1px solid var(--glass-border);margin-top:40px;}
+  .footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+  .footer-brand p{color:var(--text-low);font-size:14px;line-height:1.6;margin-top:14px;max-width:300px;}
+  footer h4{font-size:14px;margin-bottom:16px;color:var(--text-hi);}
+  footer ul{list-style:none;}
+  footer li{margin-bottom:10px;}
+  footer a{color:var(--text-low);font-size:14px;}
+  footer a:hover{color:var(--text-hi);}
+  footer a.logo{color:var(--text-hi);font-size:20px;}
+  .privacy-note{font-size:14px;line-height:1.6;color:var(--text-low);max-width:440px;}
+  .footer-bottom{
+    display:flex;justify-content:space-between;align-items:center;
+    padding-top:28px;border-top:1px solid var(--glass-border);
+    font-size:13.5px;color:var(--text-low);flex-wrap:wrap;gap:12px;
+  }
+
+  /* a11y + utilities */
+  .skip{position:absolute;left:-999px;top:8px;background:#fff;color:#000;padding:10px 16px;border-radius:8px;z-index:100;}
+  .skip:focus{left:8px;}
+  a:focus-visible,summary:focus-visible,button:focus-visible,input:focus-visible,.gallery:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:8px;}
+  .nav-toggle{background:var(--glass);border:1px solid var(--glass-border);color:var(--text-hi);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .nav-links.open{display:flex;position:absolute;top:72px;left:0;right:0;flex-direction:column;gap:0;background:rgba(10,10,20,.97);border-bottom:1px solid var(--glass-border);}
+  .nav-links.open a{padding:16px 28px;border-top:1px solid var(--glass-border);border-bottom:0;}
+  html,body{max-width:100%;overflow-x:clip;}
+
+  @media(max-width:1100px){
+    .gallery{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:14px;gap:20px;}
+    .shot{flex:0 0 272px;scroll-snap-align:start;}
+    .feature-grid{grid-template-columns:repeat(3,1fr);}
+  }
+  @media(max-width:900px){
+    .hero-grid{grid-template-columns:1fr;}
+    .phone-stage{order:-1;margin-bottom:10px;min-height:0;padding-top:60px;}
+    .moon{width:110px;height:110px;top:0;right:8%;}
+    .moon::before{width:18px;height:18px;left:22px;top:26px;}
+    .moon::after{width:10px;height:10px;right:24px;top:46px;}
+    .moon i{width:14px;height:14px;left:32px;bottom:22px;}
+    h1{font-size:40px;}
+    .feature-grid{grid-template-columns:repeat(2,1fr);}
+    .steps{grid-template-columns:1fr;}
+    .persona-grid{grid-template-columns:1fr;}
+    .stats-grid{grid-template-columns:repeat(2,1fr);}
+    .footer-grid{grid-template-columns:1fr 1fr;}
+    .footer-brand{grid-column:1 / -1;}
+    .nav-links{display:none;}
+    .nav-toggle{display:inline-block;}
+    .nav-cta{display:none;}
+    .section-head h2{font-size:32px;}
+    .cta-band{padding:54px 24px;}
+  }
+  @media(max-width:520px){
+    .feature-grid{grid-template-columns:1fr;}
+    h1{font-size:34px;}
+  }
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*{transition:none!important;}}
+</style>
+</head>
+<body id="top">
+<a class="skip" href="#features">Skip to content</a>
+<div class="stars" aria-hidden="true"></div>
+
+<!-- Icon set: line icons matching the prototype -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></symbol>
+  </defs>
+</svg>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Orbit, back to top"><span class="logo-mark"></span>Orbit</a>
+    <div class="nav-links" id="navlinks">
+      <a href="#features">Features</a>
+      <a href="#inside">Inside the app</a>
+      <a href="#how">How it works</a>
+      <a href="#personas">Who it's for</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-actions">
+      <a href="#cta" class="nav-signin">Sign in</a>
+      <a href="#cta" class="nav-cta">Get started</a>
+      <button class="nav-toggle" id="navtoggle" aria-expanded="false" aria-controls="navlinks">Menu</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">✦ Stillness, personalized</div>
+      <h1>Find your <span class="grad">center</span>, one quiet moment at a time.</h1>
+      <p class="lead">Orbit blends guided meditation, goal tracking and gentle daily rituals into one calm space — built for a generation that wants growth without the guru-worship.</p>
+      <div class="btn-row">
+        <a href="#cta" class="btn-primary">Get started — it's free</a>
+        <a href="#how" class="btn-secondary">See how it works</a>
+      </div>
+      <p class="hero-signin">Already have an account? <a href="#cta">Sign in</a></p>
+      <div class="trust-row">No ads · No leaderboards · Secular by default</div>
+    </div>
+    <div class="phone-stage">
+      <div class="orb-glow"></div>
+      <div class="moon" aria-hidden="true"><i></i></div>
+      <div class="phone" role="img" aria-label="Orbit home screen: four quick starts, today's plan with two of five tasks done, a Plan my day with AI button and five tabs.">
+        <div class="screen">
+          <div class="notch"></div>
+          <div>
+            <div class="greeting">Good morning,</div>
+          </div>
+          <div class="greeting-name"><em>Kai</em> ✦</div>
+          <div class="tile-row">
+            <div class="tile t1"><svg class="ic"><use href="#i-clock"/></svg><b>Meditate</b>10 min session</div>
+            <div class="tile t2"><svg class="ic"><use href="#i-search"/></svg><b>Focus</b>Deep work timer</div>
+            <div class="tile t3"><svg class="ic"><use href="#i-moon"/></svg><b>Sleep</b>Wind down</div>
+            <div class="tile t4"><svg class="ic"><use href="#i-doc"/></svg><b>Journal</b>Daily reflection</div>
+          </div>
+          <div class="plan">
+            <div class="plan-head"><b>Today's Plan</b><span>2/5 done</span></div>
+            <div class="bar"><i style="width:40%"></i></div>
+            <div class="todo done"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Morning meditation (10 min)</div>
+            <div class="todo done"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Review quarterly goals</div>
+            <div class="todo"><span class="box"></span>Breathwork session</div>
+            <div class="todo"><span class="box"></span>Evening journaling</div>
+            <div class="todo"><span class="box"></span>Gratitude practice</div>
+          </div>
+          <div class="ai-btn"><svg class="ic"><use href="#i-spark"/></svg>Plan my day with AI</div>
+          <div class="tabbar">
+            <span class="active"><svg class="ic"><use href="#i-home"/></svg>Home</span>
+            <span><svg class="ic"><use href="#i-target"/></svg>Goals</span>
+            <span><svg class="ic"><use href="#i-clock"/></svg>Meditate</span>
+            <span><svg class="ic"><use href="#i-search"/></svg>Explore</span>
+            <span><svg class="ic"><use href="#i-user"/></svg>Profile</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">✦ Five spaces, one orbit</div>
+      <h2>Everything stillness needs, nothing it doesn't</h2>
+      <p>Each tab answers one question: what does this moment need from me?</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="ic"><use href="#i-home"/></svg></div>
+        <h3>Home</h3>
+        <p>Four quick starts — Meditate, Focus, Sleep, Journal — and today's plan with a progress bar. No streak counter on this screen.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="ic"><use href="#i-target"/></svg></div>
+        <h3>Goals</h3>
+        <p>Set 1-year, 5-year and 10-year goals across career, health, finance, relationships and personal growth. Each ring shows milestones reached.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="ic"><use href="#i-clock"/></svg></div>
+        <h3>Meditate</h3>
+        <p>The sessions you'll return to, filtered by Focus, Sleep, Stress or Energy. A featured pick each day, from 5-minute resets to 30-minute wind-downs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="ic"><use href="#i-search"/></svg></div>
+        <h3>Explore</h3>
+        <p>For finding something new: recommended methods such as breathwork and yoga nidra, and a browsable catalogue by length and level.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg class="ic"><use href="#i-user"/></svg></div>
+        <h3>Profile</h3>
+        <p>Your minutes, streak and weekly practice, plus a few milestone badges. Kept for you, never ranked against anyone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="inside">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">✦ Inside the app</div>
+      <h2>Four screens, one calm routine</h2>
+      <p>Plan the day, check your goals, pick a session, see your progress.</p>
+    </div>
+
+    <div class="gallery" tabindex="0" role="group" aria-label="Four Orbit screens. Scroll sideways on small screens.">
+
+      <figure class="shot">
+        <div class="phone"><div class="screen planner">
+          <div class="notch"></div>
+          <h4>Tell me what you need</h4>
+          <div class="mic"><svg class="ic"><use href="#i-mic"/></svg></div>
+          <div class="typebox"><svg class="ic"><use href="#i-mic"/></svg>Or type what you need today…</div>
+          <div class="label-sm">Suggested</div>
+          <div class="chips">
+            <span class="chip on">Plan a productive morning</span>
+            <span class="chip">Help me focus on deep work</span>
+            <span class="chip">Create a wind-down routine</span>
+            <span class="chip">Prepare for a big meeting</span>
+            <span class="chip">Balance work and rest today</span>
+            <span class="chip">Reduce overwhelm &amp; stress</span>
+          </div>
+          <div class="tabbar">
+            <span class="active"><svg class="ic"><use href="#i-home"/></svg>Home</span>
+            <span><svg class="ic"><use href="#i-target"/></svg>Goals</span>
+            <span><svg class="ic"><use href="#i-clock"/></svg>Meditate</span>
+            <span><svg class="ic"><use href="#i-search"/></svg>Explore</span>
+            <span><svg class="ic"><use href="#i-user"/></svg>Profile</span>
+          </div>
+        </div></div>
+        <figcaption><b>Plan with AI</b>Say or type what you need. Orbit turns it into a task list for today that you can edit or redo.</figcaption>
+      </figure>
+
+      <figure class="shot">
+        <div class="phone"><div class="screen">
+          <div class="notch"></div>
+          <h4>My Goals</h4>
+          <div class="seg"><span class="on">1 YR</span><span>5 YRS</span><span>10 YRS</span></div>
+          <div class="goal"><div class="ring" style="--p:50;--c:#8b7cf6"><b>50%</b></div><div><h5>Career</h5><small>2 of 4 milestones</small></div></div>
+          <div class="goal"><div class="ring" style="--p:75;--c:#2dd4bf"><b>75%</b></div><div><h5>Health</h5><small>3 of 4 milestones</small></div></div>
+          <div class="goal"><div class="ring" style="--p:25;--c:#5aa8ff"><b>25%</b></div><div><h5>Finance</h5><small>1 of 4 milestones</small></div></div>
+          <div class="goal"><div class="ring" style="--p:75;--c:#f472b6"><b>75%</b></div><div><h5>Relationships</h5><small>3 of 4 milestones</small></div></div>
+          <div class="goal"><div class="ring" style="--p:50;--c:#b4a7fb"><b>50%</b></div><div><h5>Personal Growth</h5><small>2 of 4 milestones</small></div></div>
+          <div class="tabbar">
+            <span><svg class="ic"><use href="#i-home"/></svg>Home</span>
+            <span class="active"><svg class="ic"><use href="#i-target"/></svg>Goals</span>
+            <span><svg class="ic"><use href="#i-clock"/></svg>Meditate</span>
+            <span><svg class="ic"><use href="#i-search"/></svg>Explore</span>
+            <span><svg class="ic"><use href="#i-user"/></svg>Profile</span>
+          </div>
+        </div></div>
+        <figcaption><b>Goals</b>Each ring is milestones reached, so 2 of 4 reads as 50%. Switch between 1, 5 and 10 years.</figcaption>
+      </figure>
+
+      <figure class="shot">
+        <div class="phone"><div class="screen">
+          <div class="notch"></div>
+          <div class="screen-top"><h4>Meditate</h4><svg class="ic"><use href="#i-search"/></svg></div>
+          <div class="feat"><small>Featured</small><b>Today's pick</b><span>Morning Activation · 8 min · Beginner</span><div class="play"><svg class="ic"><use href="#i-play"/></svg></div></div>
+          <div class="fchips"><span class="chip on">All</span><span class="chip">Focus</span><span class="chip">Sleep</span><span class="chip">Stress</span><span class="chip">Energy</span></div>
+          <div class="sess"><div class="thumb g1"><svg class="ic"><use href="#i-play"/></svg></div><div><h5>Quick Reset</h5><small>5 min · Focus</small></div></div>
+          <div class="sess"><div class="thumb g2"><svg class="ic"><use href="#i-play"/></svg></div><div><h5>Sleep Dissolve</h5><small>30 min · Sleep</small></div></div>
+          <div class="sess"><div class="thumb g3"><svg class="ic"><use href="#i-play"/></svg></div><div><h5>Anxiety Release</h5><small>15 min · Stress</small></div></div>
+          <div class="tabbar">
+            <span><svg class="ic"><use href="#i-home"/></svg>Home</span>
+            <span><svg class="ic"><use href="#i-target"/></svg>Goals</span>
+            <span class="active"><svg class="ic"><use href="#i-clock"/></svg>Meditate</span>
+            <span><svg class="ic"><use href="#i-search"/></svg>Explore</span>
+            <span><svg class="ic"><use href="#i-user"/></svg>Profile</span>
+          </div>
+        </div></div>
+        <figcaption><b>Meditate</b>Filter by what you need and see the length before you press play.</figcaption>
+      </figure>
+
+      <figure class="shot">
+        <div class="phone"><div class="screen">
+          <div class="notch"></div>
+          <div class="me"><div class="avatar-s">KR</div><div><h4>Kai Rivers</h4><div class="sub">Joined March 2024</div></div></div>
+          <div class="rings3">
+            <div><div class="ring" style="--p:57;--c:#8b7cf6"><b>287</b></div><small>Minutes<br>of 500 goal</small></div>
+            <div><div class="ring" style="--p:100;--c:#f472b6"><b>14</b></div><small>Day streak</small></div>
+            <div><div class="ring" style="--p:76;--c:#5aa8ff"><b>38</b></div><small>Sessions<br>this month</small></div>
+          </div>
+          <div class="week">
+            <div class="week-head"><b>This week</b><span>Minutes per day</span></div>
+            <div class="bars"><i style="height:40%"></i><i style="height:70%"></i><i class="today" style="height:100%"></i><i class="future"></i><i class="future"></i><i class="future"></i><i class="future"></i></div>
+            <div class="days"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+          </div>
+          <div class="badges">
+            <div class="badge"><b>7-Day Streak</b>Meditated 7 days in a row</div>
+            <div class="badge"><b>Morning Star</b>Meditated before 8 AM for 5 days</div>
+            <div class="badge"><b>Cosmic 100</b>100 total meditation minutes</div>
+            <div class="badge locked"><b><svg class="ic"><use href="#i-lock"/></svg>Goal Crusher</b>Complete all goals in one category</div>
+          </div>
+          <div class="tabbar">
+            <span><svg class="ic"><use href="#i-home"/></svg>Home</span>
+            <span><svg class="ic"><use href="#i-target"/></svg>Goals</span>
+            <span><svg class="ic"><use href="#i-clock"/></svg>Meditate</span>
+            <span><svg class="ic"><use href="#i-search"/></svg>Explore</span>
+            <span class="active"><svg class="ic"><use href="#i-user"/></svg>Profile</span>
+          </div>
+        </div></div>
+        <figcaption><b>Profile</b>Your own minutes, streak and week. Nothing is compared with other people.</figcaption>
+      </figure>
+
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">✦ Getting started</div>
+      <h2>Three steps into stillness</h2>
+      <p>Try a session before you make an account. Orbit asks what you need, then gets out of the way.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Tell Orbit why you're here</h3>
+        <p>Pick what brought you — stress, focus, sleep, curiosity — so your first plan fits. Prefer to skip it? Try a session as a guest.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Get a plan for today</h3>
+        <p>Start from a quick tile, or tell the AI planner what you need by voice or text. It builds a short list you can edit.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Let your practice build</h3>
+        <p>Come back when it suits you. Your goals, weekly minutes and streak live in one place on your Profile.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats-band" aria-label="Orbit at a glance">
+  <div class="wrap stats-grid">
+    <div><div class="stat-num">5</div><div class="stat-label">Core spaces, zero clutter</div></div>
+    <div><div class="stat-num">5–35</div><div class="stat-label">Minute sessions, your call</div></div>
+    <div><div class="stat-num">1·5·10</div><div class="stat-label">Year horizons for your goals</div></div>
+    <div><div class="stat-num">0</div><div class="stat-label">Leaderboards or rankings</div></div>
+  </div>
+</section>
+
+<section id="personas">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">✦ Built around real people</div>
+      <h2>Who Orbit is designed for</h2>
+      <p>Two people, two very different weeks — both looking for five quiet minutes.</p>
+    </div>
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="persona-top">
+          <div class="avatar">AR</div>
+          <div>
+            <h3>Ananya Rao</h3>
+            <span>20 · Final-year engineering student, Pune</span>
+          </div>
+        </div>
+        <p class="quote">“I don’t need another to-do app. I need something that actually helps me calm down before it helps me get things done.”</p>
+        <div class="persona-tags">
+          <span>Complete beginner</span>
+          <span>Not religious</span>
+          <span>Doesn't want an account just to try</span>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="persona-top">
+          <div class="avatar">KM</div>
+          <div>
+            <h3>Kabir Mehta</h3>
+            <span>24 · Software engineer, Bengaluru</span>
+          </div>
+        </div>
+        <p class="quote">“I want something that feels premium and modern — not pink, not preachy — that actually connects my goals to my daily habits.”</p>
+        <div class="persona-tags">
+          <span>Goal-oriented</span>
+          <span>1, 5 and 10-year thinker</span>
+          <span>Wants structure</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">✦ Good questions</div>
+      <h2>Before you start</h2>
+    </div>
+    <div class="faq-list">
+      <details><summary>Is Orbit religious or led by a teacher?</summary><p>No. Orbit is secular by default: no single teacher and no dogma. Some practices, like yoga nidra, come from older traditions. Orbit describes them plainly and doesn't ask you to believe anything.</p></details>
+      <details><summary>What does the AI planner do?</summary><p>You type or say what you need today. Orbit turns it into a task list for your plan, and you can accept it, edit it or ask for a new one. It's a planner, not a teacher or a person.</p></details>
+      <details><summary>How long are the sessions?</summary><p>From 5-minute resets like Quick Reset to 30-minute sleep sessions. On the Meditate tab, filter by Focus, Sleep, Stress or Energy.</p></details>
+      <details><summary>What's the difference between Meditate and Explore?</summary><p>Meditate holds the sessions you'll come back to, with filters. Explore is for finding methods you haven't tried yet.</p></details>
+      <details><summary>Do I need an account first?</summary><p>No. You can try a session as a guest and create an account when you want to save your progress. After that you stay signed in. If you already have one, use Sign in at the top of this page.</p></details>
+      <details><summary>Does Orbit track streaks and points?</summary><p>Your Profile shows minutes, a streak and a few milestone badges. There are no points to spend, no leaderboards and no comparison with other people. The home screen doesn't show a streak.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="cta">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2>Your orbit starts with one quiet minute.</h2>
+      <p class="lead2">Try a session as a guest. Add your email to hear when Orbit launches.</p>
+      <form class="wait" id="waitlist" novalidate>
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" aria-describedby="form-msg" required>
+        <button class="btn-primary" type="submit">Join the waitlist</button>
+      </form>
+      <div class="form-msg" id="form-msg" role="status" aria-live="polite"></div>
+      <p class="cta-note">Coursework prototype: nothing you enter here is sent or stored.</p>
+      <p class="cta-signin">Already have an account? <a href="#cta">Sign in</a></p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="#top"><span class="logo-mark"></span>Orbit</a>
+        <p>A quiet space for stillness, focus and self-growth — designed for a generation that wants growth without the performance.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#inside">Inside the app</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#personas">Who it's for</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div id="privacy">
+        <h4>Privacy</h4>
+        <p class="privacy-note">This page is a coursework design project. It doesn't collect, send or store any personal data, and it sets no cookies.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Orbit. A coursework design project.</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* mobile menu: toggle, close on link tap, close on Escape */
+  var nav=document.getElementById('navlinks'), tog=document.getElementById('navtoggle');
+  function setMenu(open){nav.classList.toggle('open',open);tog.setAttribute('aria-expanded',String(open));tog.textContent=open?'Close':'Menu';}
+  tog.addEventListener('click',function(){setMenu(!nav.classList.contains('open'));});
+  nav.addEventListener('click',function(e){if(e.target.tagName==='A')setMenu(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&nav.classList.contains('open')){setMenu(false);tog.focus();}});
+
+  /* scroll-spy: highlight the current section in the nav */
+  var links=[].slice.call(nav.querySelectorAll('a'));
+  var map={};links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          links.forEach(function(a){a.removeAttribute('aria-current');});
+          var a=map[en.target.id];if(a)a.setAttribute('aria-current','true');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    Object.keys(map).forEach(function(id){var s=document.getElementById(id);if(s)io.observe(s);});
+  }
+
+  /* waitlist form: inline validation + confirmation (demo only) */
+  var form=document.getElementById('waitlist'), email=document.getElementById('email'), msg=document.getElementById('form-msg');
+  form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var v=email.value.trim();
+    var ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    if(!ok){
+      email.setAttribute('aria-invalid','true');
+      msg.className='form-msg err';
+      msg.textContent=v?'That doesn\u2019t look like an email. Try something like name@example.com.':'Enter your email to join the waitlist.';
+      email.focus();return;
+    }
+    email.removeAttribute('aria-invalid');
+    msg.className='form-msg ok';
+    msg.textContent='You\u2019re on the list (demo only: nothing was saved).';
+    form.reset();
+  });
+  email.addEventListener('input',function(){if(email.getAttribute('aria-invalid')){email.removeAttribute('aria-invalid');msg.textContent='';msg.className='form-msg';}});
+})();
+</script>
+</body>
+</html>
